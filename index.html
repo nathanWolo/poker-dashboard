@@ -6,92 +6,118 @@
 <title>Poker 2.0</title>
 <meta name="description" content="Standings, sessions and lifetime results for the Poker 2.0 home game.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%99%A0%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   color-scheme: light;
-  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f2ee;
-  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
-  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
-  --win:#2a78d6; --loss:#e34948; --mid:#f0efec;
-  --win-ink:#1c5cab; --loss-ink:#b8302f;
-  --accent:#2a78d6;
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --bgline:#d6d5ce;
-  --font: system-ui,-apple-system,"Segoe UI",sans-serif;
+  /* table */
+  --felt:#11603b; --felt-2:#0b4529; --felt-3:#062a19; --rail:#3a2414;
+  --felt-ink:#f5edd6; --felt-muted:rgba(245,237,214,.72); --gold:#d4af37;
+  /* playing-card panels */
+  --surface:#fbf7ee; --surface-2:#f2ecdd; --ink:#1c1a16; --ink-2:#57524a; --muted:#8a8478;
+  --grid:#e7e0cf; --axis:#c8bfa9; --border:rgba(70,50,20,.14); --shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 6px 18px rgba(0,0,0,.28);
+  --suit-red:#c8102e; --suit-black:#1c1a16;
+  --win:#2a78d6; --loss:#e34948; --win-ink:#1c5cab; --loss-ink:#b8302f;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --bgline:#ddd4c0;
+  --chip-red:#c8102e; --chip-blue:#1f4fa8; --chip-black:#1c1c1c; --chip-green:#127a46;
+  --font: "Inter", system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display: "Playfair Display", Georgia, "Times New Roman", serif;
 }
 @media (prefers-color-scheme: dark){
   :root:where(:not([data-theme="light"])){
     color-scheme: dark;
-    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
-    --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
-    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-    --win:#3987e5; --loss:#e66767; --mid:#383835;
-    --win-ink:#86b6ef; --loss-ink:#f09a9a; --accent:#3987e5;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --bgline:#3a3a37;
+    --felt:#0c3f27; --felt-2:#082d1c; --felt-3:#041710; --rail:#22150b;
+    --surface:#18201b; --surface-2:#212b25; --ink:#f0ebe0; --ink-2:#c6bfb0; --muted:#8f897c;
+    --grid:#2b352f; --axis:#3d4840; --border:rgba(255,255,255,.10); --shadow:0 6px 18px rgba(0,0,0,.45);
+    --suit-red:#f0606f; --suit-black:#f0ebe0;
+    --win:#3987e5; --loss:#e66767; --win-ink:#86b6ef; --loss-ink:#f09a9a;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --bgline:#36423b;
   }
 }
 :root[data-theme="dark"]{
   color-scheme: dark;
-  --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
-  --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
-  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-  --win:#3987e5; --loss:#e66767; --mid:#383835;
-  --win-ink:#86b6ef; --loss-ink:#f09a9a; --accent:#3987e5;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --bgline:#3a3a37;
+  --felt:#0c3f27; --felt-2:#082d1c; --felt-3:#041710; --rail:#22150b;
+  --surface:#18201b; --surface-2:#212b25; --ink:#f0ebe0; --ink-2:#c6bfb0; --muted:#8f897c;
+  --grid:#2b352f; --axis:#3d4840; --border:rgba(255,255,255,.10); --shadow:0 6px 18px rgba(0,0,0,.45);
+  --suit-red:#f0606f; --suit-black:#f0ebe0;
+  --win:#3987e5; --loss:#e66767; --win-ink:#86b6ef; --loss-ink:#f09a9a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --bgline:#36423b;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font);-webkit-text-size-adjust:100%}
-body{line-height:1.45}
-.wrap{max-width:1040px;margin:0 auto;padding:24px 16px 64px}
-header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
-h1{font-size:28px;line-height:1.1;margin:0;letter-spacing:-0.01em}
-h1 .suit{color:var(--muted);font-weight:400;margin-right:6px}
-.sub{color:var(--ink-2);font-size:14px;margin-top:4px}
-.theme-btn{font:inherit;font-size:13px;color:var(--ink-2);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+html{background:var(--felt-3)}
+body{margin:0;min-height:100vh;color:var(--ink);font-family:var(--font);line-height:1.45;-webkit-text-size-adjust:100%;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% 0%, var(--felt) 0%, var(--felt-2) 55%, var(--felt-3) 100%) fixed,
+    var(--felt-3);
+  border-top:10px solid var(--rail)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E")}
+.wrap{position:relative;max-width:1040px;margin:0 auto;padding:28px 16px 64px}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;margin:0;color:var(--felt-ink);letter-spacing:.01em;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+h1 .suits{font-size:22px;letter-spacing:4px;vertical-align:6px;margin-right:10px;color:var(--felt-ink)}
+h1 .suits i{font-style:normal;color:#ff5a6a}
+.sub{color:var(--felt-muted);font-size:14px;margin-top:8px}
+.theme-btn{font:inherit;font-size:13px;font-weight:500;color:var(--felt-ink);background:rgba(0,0,0,.22);border:1px solid rgba(245,237,214,.25);border-radius:999px;padding:6px 14px;cursor:pointer}
+.theme-btn:hover{background:rgba(0,0,0,.35)}
 .tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
-.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0}
-.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.tile .v{font-size:26px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile{position:relative;background:var(--surface);border-radius:14px;padding:14px 16px 14px 64px;min-width:0;box-shadow:var(--shadow)}
+.tile::before{content:"";position:absolute;left:12px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;
+  display:grid;place-items:center;font-size:17px;color:#fff;background:var(--chip,var(--chip-black));
+  box-shadow:0 0 0 3px var(--surface) inset, 0 0 0 5px var(--chip,var(--chip-black)) inset, 0 0 0 1px rgba(0,0,0,.25);
+  background-image:repeating-conic-gradient(from 0deg, rgba(255,255,255,.9) 0 12deg, transparent 12deg 45deg);
+  background-blend-mode:normal}
+.tile::after{content:attr(data-suit);position:absolute;left:12px;top:50%;transform:translateY(-50%);width:40px;height:22px;line-height:22px;text-align:center;font-size:13px;
+  color:var(--chip,var(--chip-black));background:#fff;border-radius:50%;width:22px;margin-left:9px}
+.tile .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.tile .v{font-family:var(--display);font-size:26px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tile .d{font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 18px 14px;margin-bottom:16px;min-width:0}
-.card h2{font-size:17px;margin:0}
-.card .hint{font-size:13px;color:var(--ink-2);margin:2px 0 12px}
+.card{position:relative;background:var(--surface);border-radius:16px;padding:20px 20px 16px;margin-bottom:18px;min-width:0;box-shadow:var(--shadow)}
+.card[data-suit]::after{content:attr(data-suit);position:absolute;top:14px;right:18px;font-family:var(--display);font-size:22px;line-height:1;color:var(--suit-black);opacity:.85}
+.card[data-suit="♥"]::after,.card[data-suit="♦"]::after{color:var(--suit-red)}
+.card h2{font-family:var(--display);font-size:22px;font-weight:700;margin:0;padding-right:28px}
+.card .hint{font-size:13px;color:var(--ink-2);margin:4px 0 12px}
 .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
 .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
-select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;max-width:100%}
-.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:2px}
-.seg button{font:inherit;font-size:13px;border:0;background:transparent;color:var(--ink-2);padding:5px 10px;border-radius:6px;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--border)}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:6px 12px;max-width:100%}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:3px}
+.seg button{font:inherit;font-size:13px;border:0;background:transparent;color:var(--ink-2);padding:5px 12px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--felt-2);color:var(--felt-ink)}
 svg text{font-family:var(--font)}
 .chart{width:100%;display:block;overflow:visible}
-.tt{position:fixed;pointer-events:none;z-index:10;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.12);max-width:260px;display:none}
+.tt{position:fixed;pointer-events:none;z-index:10;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:280px;display:none}
 .tt b{font-weight:650}
 .tt .r{display:flex;justify-content:space-between;gap:16px;font-variant-numeric:tabular-nums}
 .tt .r span:first-child{color:var(--ink-2)}
 table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--grid)}
-th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+th{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
 td.num,th.num{text-align:right}
 .pos{color:var(--win-ink)} .neg{color:var(--loss-ink)}
 .sess{border-bottom:1px solid var(--grid)}
-.sess summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:10px 4px}
+.sess summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:10px 6px}
 .sess summary::-webkit-details-marker{display:none}
 .sess summary .date{font-weight:600}
 .sess summary .meta{color:var(--ink-2);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sess summary .pot{font-variant-numeric:tabular-nums;color:var(--ink-2);font-size:14px}
-.sess[open] summary{background:var(--surface-2);border-radius:8px}
+.sess[open] summary{background:var(--surface-2);border-radius:10px}
 .sess .inner{padding:6px 4px 12px}
+.more{display:block;margin:14px auto 2px;font:inherit;font-size:14px;font-weight:600;color:var(--felt-ink);background:var(--felt-2);border:0;border-radius:999px;padding:8px 18px;cursor:pointer}
 .records{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.rec{background:var(--surface-2);border-radius:10px;padding:12px 14px;min-width:0}
-.rec .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.rec .v{font-size:20px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+.rec{background:var(--surface-2);border-radius:12px;padding:12px 14px;min-width:0;border-left:4px solid var(--rec, var(--chip-black))}
+.records .rec:nth-child(4n+1){--rec:var(--chip-red)} .records .rec:nth-child(4n+2){--rec:var(--chip-blue)} .records .rec:nth-child(4n+3){--rec:var(--chip-green)}
+.rec .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.rec .v{font-family:var(--display);font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums lining-nums}
 .rec .d{font-size:13px;color:var(--ink-2)}
 .owe{display:flex;flex-wrap:wrap;gap:8px}
-.chip{display:inline-flex;gap:6px;align-items:baseline;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:14px;font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;gap:6px;align-items:baseline;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-size:14px;font-variant-numeric:tabular-nums}
 .chip.paid{opacity:.55;text-decoration:line-through}
-.status{padding:40px 16px;text-align:center;color:var(--ink-2)}
+.status{padding:40px 16px;text-align:center;color:var(--felt-muted)}
+.card.status{color:var(--ink-2)}
 .status.err{color:var(--loss-ink)}
-footer{color:var(--muted);font-size:13px;margin-top:24px}
-footer a{color:var(--ink-2)}
+footer{color:var(--felt-muted);font-size:13px;margin-top:24px}
+footer a{color:var(--felt-ink)}
 .legend{display:flex;gap:14px;font-size:13px;color:var(--ink-2);margin-bottom:8px}
 .pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
 .pick .chip{cursor:default}
@@ -105,16 +131,18 @@ footer a{color:var(--ink-2)}
   .records{grid-template-columns:repeat(2,minmax(0,1fr))}
   .sess summary{grid-template-columns:minmax(0,1fr) auto;row-gap:2px}
   .sess summary .meta{grid-column:1 / -1;grid-row:2;white-space:normal}
-  h1{font-size:24px}
+  h1{font-size:32px}
+  .tile{padding:12px 12px 12px 54px} .tile::before{width:34px;height:34px;left:10px} .tile::after{margin-left:6px;left:10px}
+  .tile .d,.tile .k{white-space:normal}
 }
-@media (max-width:420px){ .records{grid-template-columns:minmax(0,1fr)} .tile .v{font-size:22px} }
+@media (max-width:420px){ .records{grid-template-columns:minmax(0,1fr)} .tile .v{font-size:21px} .card{padding:16px 14px 12px} }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div>
-      <h1><span class="suit">♠</span>Poker 2.0</h1>
+      <h1><span class="suits" aria-hidden="true">♠<i>♥</i>♣<i>♦</i></span>Poker 2.0</h1>
       <div class="sub" id="subtitle">Loading the tally…</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center"><a class="theme-btn" href="https://github.com/nathanWolo/poker-dashboard" style="text-decoration:none">GitHub</a><button class="theme-btn" id="themeBtn" type="button">Theme: auto</button></div>
@@ -144,6 +172,7 @@ const money = (n, sign=true) => {
 const cls = n => n > 0.004 ? "pos" : n < -0.004 ? "neg" : "";
 const round2 = n => Math.round(n*100)/100;
 const fmtDate = d => { const [y,m,dd] = d.split("-").map(Number); return new Date(y,m-1,dd).toLocaleDateString("en-CA",{month:"short",day:"numeric",year:"numeric"}); };
+const gameDate = d => { const [y,m,dd] = d.split("-").map(Number); return new Date(y,m-1,dd).toLocaleDateString("en-CA",{month:"short",day:"numeric"}) + " ’" + String(y).slice(2); };
 const shortDate = d => { const [y,m,dd] = d.split("-").map(Number); return new Date(y,m-1,dd).toLocaleDateString("en-CA",{month:"short",day:"numeric"}); };
 
 function gvizUrl(sheet, range){
@@ -341,7 +370,7 @@ function render(){
     const unpaid = losers.filter(s => !/paid/i.test(s.settled||""));
     const owed = round2(unpaid.reduce((a,s)=>a-s.net,0));
     if (losers.length){
-      oweHtml = `<div class="card"><h2>Settling up: ${esc(closed.name)}</h2>
+      oweHtml = `<div class="card" data-suit="♥"><h2>Settling up: ${esc(closed.name)}</h2>
         <p class="hint">${unpaid.length ? `${unpaid.length} of ${losers.length} still to pay, ${money(owed,false)} outstanding.` : "Everyone has paid."}</p>
         <div class="owe">${losers.sort((a,b)=>a.net-b.net).map(s => `<span class="chip ${/paid/i.test(s.settled||"")?"paid":""}">${esc(s.name)} <span>${money(-s.net,false)}</span></span>`).join("")}</div></div>`;
     }
@@ -352,20 +381,20 @@ function render(){
 
   $("#app").innerHTML = `
     <div class="tiles">
-      <div class="tile"><div class="k">This period</div><div class="v">${curSessions.length} game${curSessions.length===1?"":"s"}</div><div class="d">${esc(cur.name)}</div></div>
-      <div class="tile"><div class="k">Buy-ins this period</div><div class="v">${money(curPot,false)}</div><div class="d">${curSessions.length ? `${money(round2(curPot/curSessions.length),false)} per game` : "No games yet"}</div></div>
-      <div class="tile"><div class="k">Period leader</div><div class="v">${leader?esc(leader.name):"–"}</div><div class="d ${leader?cls(leader.net):""}">${leader?money(leader.net):""}</div></div>
-      <div class="tile"><div class="k">All-time leader</div><div class="v">${esc(lifeLeader.name)}</div><div class="d ${cls(lifeLeader.total)}">${money(lifeLeader.total)}</div></div>
+      <div class="tile" data-suit="♠" style="--chip:var(--chip-black)"><div class="k">This period</div><div class="v">${curSessions.length} game${curSessions.length===1?"":"s"}</div><div class="d">${esc(cur.name)}</div></div>
+      <div class="tile" data-suit="♦" style="--chip:var(--chip-red)"><div class="k">Buy-ins this period</div><div class="v">${money(curPot,false)}</div><div class="d">${curSessions.length ? `${money(round2(curPot/curSessions.length),false)} per game` : "No games yet"}</div></div>
+      <div class="tile" data-suit="♣" style="--chip:var(--chip-green)"><div class="k">Period leader</div><div class="v">${leader?esc(leader.name):"–"}</div><div class="d ${leader?cls(leader.net):""}">${leader?money(leader.net):""}</div></div>
+      <div class="tile" data-suit="♥" style="--chip:var(--chip-blue)"><div class="k">All-time leader</div><div class="v">${esc(lifeLeader.name)}</div><div class="d ${cls(lifeLeader.total)}">${money(lifeLeader.total)}</div></div>
     </div>
     ${oweHtml}
-    <div class="card">
+    <div class="card" data-suit="♠">
       <h2>Standings</h2>
       <p class="hint">Net result for each player in the selected settlement period. Tap a bar for details.</p>
       <div class="controls"><label class="sr" for="periodSel">Period</label><select id="periodSel">${periodOpts}</select></div>
       <div class="legend"><span><i style="background:var(--win)"></i>Up</span><span><i style="background:var(--loss)"></i>Down</span></div>
       <div id="standings"></div>
     </div>
-    <div class="card">
+    <div class="card" data-suit="♣">
       <h2>Lifetime</h2>
       <p class="hint">Every settlement period added together. Tap a name to see their history.</p>
       <div class="controls"><div class="seg" role="group" aria-label="Who to show">
@@ -373,13 +402,13 @@ function render(){
         <button type="button" data-f="all" aria-pressed="${STATE.lifeFilter==="all"}">Everyone</button></div></div>
       <div id="lifetime"></div>
     </div>
-    <div class="card">
+    <div class="card" data-suit="♦">
       <h2>Results over time</h2>
-      <p class="hint">Running total for each player. Before Sep 2026 the Sheet only has one total per settlement period, so those points are period totals; after that there's a point for every game. Grey lines are the other regulars.</p>
+      <p class="hint">Running total for each player, with a point for every game posted in the group chat. Games that were never posted (most of Sep 2025 and Nov–Dec 2025) and side payments show up as a step at that period's settlement, so every line ends on the player's lifetime total. Grey lines are the other regulars.</p>
       <div class="pick" id="trendPick"></div>
       <div id="trend"></div>
     </div>
-    <div class="card" id="playerCard">
+    <div class="card" data-suit="♠" id="playerCard">
       <h2>Player history</h2>
       <p class="hint">Result in each settlement period, plus every logged game.</p>
       <div class="controls"><label class="sr" for="playerSel">Player</label><select id="playerSel">${playerOpts}</select></div>
@@ -387,14 +416,14 @@ function render(){
       <div id="playerChart"></div>
       <div id="playerGames"></div>
     </div>
-    <div class="card">
+    <div class="card" data-suit="♥">
       <h2>Records</h2>
-      <p class="hint">Single-game records cover games with a full session log (since ${sessions.length?fmtDate(sessions[sessions.length-1].date):"–"}). Period records cover everything.</p>
+      <p class="hint">Single-game records cover every game with posted results, from ${sessions.length?fmtDate(sessions[sessions.length-1].date):"–"} on (results for Nov–Dec 2025 were never posted). Period records cover everything.</p>
       <div class="records" id="records"></div>
     </div>
-    <div class="card">
+    <div class="card" data-suit="♣">
       <h2>Games</h2>
-      <p class="hint">Every logged game, newest first. Tap one to see the full results.</p>
+      <p class="hint">Every game with posted results, newest first. Tap one to see the full results.</p>
       <div id="games"></div>
     </div>`;
 
@@ -404,7 +433,7 @@ function render(){
     document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x===b));
     drawLifetime();
   }));
-  $("#playerSel").addEventListener("change", e => { STATE.player = e.target.value; drawPlayer(); });
+  $("#playerSel").addEventListener("change", e => { STATE.player = e.target.value; showAllPlayerGames = false; drawPlayer(); });
 
   drawStandings(); drawLifetime(); drawTrend(); drawPlayer(); drawRecords(sessions); drawGames(sessions);
 }
@@ -416,7 +445,18 @@ function buildTimeline(){
     if (t.log.length){
       const byDate = {};
       for (const e of t.log) (byDate[e.date] ||= {})[e.name] = round2((byDate[e.date][e.name]||0) + e.net);
-      Object.keys(byDate).sort().forEach(d => pts.push({date:d, label:`Game, ${fmtDate(d)}`, deltas:byDate[d]}));
+      const dates = Object.keys(byDate).sort();
+      dates.forEach(d => pts.push({date:d, label:`Game, ${fmtDate(d)}`, deltas:byDate[d]}));
+      // If the period's settled totals differ from its logged games (games never posted, side payments,
+      // balancing), add the difference at settlement so running totals still end on the period result.
+      const logSum = {}; for (const e of t.log) logSum[e.name] = round2((logSum[e.name]||0) + e.net);
+      const adj = {};
+      for (const st of t.standings) { const d = round2(st.net - (logSum[st.name]||0)); if (Math.abs(d) > 0.005) adj[st.name] = d; }
+      for (const n in logSum) if (!t.standings.some(st => st.name === n) && Math.abs(logSum[n]) > 0.005) adj[n] = -logSum[n];
+      if (Object.keys(adj).length) {
+        const ad = PERIOD_END[t.name] && PERIOD_END[t.name] >= dates[dates.length-1] ? PERIOD_END[t.name] : dates[dates.length-1];
+        pts.push({date:ad, label:`${t.name} settlement (games not in the chat and side payments)`, deltas:adj});
+      }
     } else {
       let d = PERIOD_END[t.name];
       if (!d){ const m = t.name.match(/(\w{3})\s*(\d{4})?\s*$/); const y = (t.name.match(/\d{4}/g)||[]).pop();
@@ -552,8 +592,10 @@ function drawPlayer(){
     <div class="rec"><div class="k">Best logged game</div><div class="v ${best?cls(best.net):""}">${best?money(best.net):"–"}</div><div class="d">${best?fmtDate(best.date):""}</div></div></div>`;
   columns($("#playerChart"), MODEL.periods.map(k => ({label: k, value: k in p.byPeriod ? p.byPeriod[k] : null,
     tip: `<b>${esc(k)}</b><div class="r"><span>${esc(p.name)}</span><span>${k in p.byPeriod ? money(p.byPeriod[k]) : "Didn't play"}</span></div>`})));
+  const shownGames = showAllPlayerGames ? games : games.slice(0, 10);
   $("#playerGames").innerHTML = games.length ? `<table><thead><tr><th>Date</th><th class="num">In</th><th class="num">Out</th><th class="num">Net</th></tr></thead><tbody>${
-    games.map(g => `<tr><td>${fmtDate(g.date)}</td><td class="num">${money(g.buyIn,false)}</td><td class="num">${money(g.cashOut,false)}</td><td class="num ${cls(g.net)}">${money(g.net)}</td></tr>`).join("")}</tbody></table>` : "";
+    shownGames.map(g => `<tr><td>${fmtDate(g.date)}</td><td class="num">${money(g.buyIn,false)}</td><td class="num">${money(g.cashOut,false)}</td><td class="num ${cls(g.net)}">${money(g.net)}</td></tr>`).join("")}</tbody></table>` + (games.length > 10 ? `<button type="button" class="more" id="morePlayerGames">${showAllPlayerGames ? "Show fewer" : `Show all ${games.length} games`}</button>` : "") : "";
+  $("#morePlayerGames")?.addEventListener("click", () => { showAllPlayerGames = !showAllPlayerGames; drawPlayer(); });
 }
 
 function drawRecords(sessions){
@@ -572,24 +614,25 @@ function drawRecords(sessions){
     recs.push(["Best period", money(bp.v), `${bp.name}, ${bp.period}`]);
     recs.push(["Worst period", money(wp.v), `${wp.name}, ${wp.period}`]);
   }
-  // Games played: use each period's Sessions column where the tab has one (Apr 2026 on).
+  // Games played: every logged game
   const counts = {};
-  const counted = MODEL.tabs.filter(t => t.standings.some(s => s.sessions != null));
-  for (const t of counted) for (const s of t.standings) if (s.sessions) counts[s.name] = (counts[s.name]||0) + s.sessions;
-  const since = counted.length ? counted[0].name.split("-")[0] + " " + (counted[0].name.match(/\d{4}/)||[""])[0] : "";
+  for (const e of all) counts[e.name] = (counts[e.name]||0) + 1;
   const mx = Math.max(0, ...Object.values(counts));
   const tops = Object.keys(counts).filter(k => counts[k] === mx);
-  if (mx) recs.push([`Most games played${since ? " (since " + since + ")" : ""}`, `${mx}`, tops.length > 3 ? `${tops.length}-way tie` : tops.join(", ")]);
+  if (mx) recs.push(["Most games played", `${mx}`, tops.length > 3 ? `${tops.length}-way tie` : tops.join(", ")]);
   $("#records").innerHTML = recs.map(([k,v,d]) => `<div class="rec"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="d">${esc(d)}</div></div>`).join("");
 }
 
+let showAllGames = false, showAllPlayerGames = false;
 function drawGames(sessions){
-  $("#games").innerHTML = sessions.map(s => {
+  const LIMIT = 12, list = showAllGames ? sessions : sessions.slice(0, LIMIT);
+  $("#games").innerHTML = list.map(s => {
     const top = s.rows[0];
-    return `<details class="sess"><summary><span class="date">${shortDate(s.date)}</span><span class="meta">${s.rows.length} players · top: ${esc(top.name)} <span class="${cls(top.net)}">${money(top.net)}</span></span><span class="pot">${money(s.pot,false)} in</span></summary>
+    return `<details class="sess"><summary><span class="date">${gameDate(s.date)}</span><span class="meta">${s.rows.length} players · top: ${esc(top.name)} <span class="${cls(top.net)}">${money(top.net)}</span></span><span class="pot">${money(s.pot,false)} in</span></summary>
       <div class="inner"><table><thead><tr><th>Player</th><th class="num">In</th><th class="num">Out</th><th class="num">Net</th></tr></thead><tbody>${
         s.rows.map(r => `<tr><td>${esc(r.name)}</td><td class="num">${money(r.buyIn,false)}</td><td class="num">${money(r.cashOut,false)}</td><td class="num ${cls(r.net)}">${money(r.net)}</td></tr>`).join("")}</tbody></table></div></details>`;
-  }).join("") || `<div class="status">No logged games yet.</div>`;
+  }).join("") + (sessions.length > LIMIT ? `<button type="button" class="more" id="moreGames">${showAllGames ? "Show fewer" : `Show all ${sessions.length} games`}</button>` : "") || `<div class="status">No logged games yet.</div>`;
+  $("#moreGames")?.addEventListener("click", () => { showAllGames = !showAllGames; drawGames(sessions); });
 }
 
 // ---- Theme toggle ----------------------------------------------------------
