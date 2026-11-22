@@ -215,6 +215,10 @@ async function load(){
     players.push({name: name.trim(), byPeriod, total: round2(vals.reduce((a,b)=>a+b,0)), periods: vals.length});
   }
   const tabs = await Promise.all(periods.map(p => fetchTab(p, "A1:L600").then(t => parsePeriod(p, t)).catch(() => ({name:p, standings:[], log:[]}))));
+  // Nights attended = games each player appears in across all logged games
+  const nights = {};
+  for (const t of tabs) { const seen = new Set(); for (const e of t.log) { const k = e.date + "|" + e.name; if (!seen.has(k)) { seen.add(k); nights[e.name] = (nights[e.name]||0) + 1; } } }
+  for (const p of players) p.nights = nights[p.name] || 0;
   return {periods, players, tabs};
 }
 
@@ -398,7 +402,7 @@ function render(){
       <h2>Lifetime</h2>
       <p class="hint">Every settlement period added together. Tap a name to see their history.</p>
       <div class="controls"><div class="seg" role="group" aria-label="Who to show">
-        <button type="button" data-f="regulars" aria-pressed="${STATE.lifeFilter==="regulars"}">Regulars (3+ periods)</button>
+        <button type="button" data-f="regulars" aria-pressed="${STATE.lifeFilter==="regulars"}">Regulars (3+ nights)</button>
         <button type="button" data-f="all" aria-pressed="${STATE.lifeFilter==="all"}">Everyone</button></div></div>
       <div id="lifetime"></div>
     </div>
@@ -501,7 +505,7 @@ function drawTrend(){
   const el = $("#trend");
   const W = Math.max(el.clientWidth, 280), narrow = W < 520;
   const H = narrow ? 260 : 320, padL = 52, padR = narrow ? 58 : 76, padT = 12, padB = 26;
-  const bg = MODEL.players.filter(p => p.periods >= 3 && !picked.some(q=>q.name===p.name)).map(p=>p.name);
+  const bg = MODEL.players.filter(p => p.nights >= 3 && !picked.some(q=>q.name===p.name)).map(p=>p.name);
   const shown = [...bg, ...picked.map(p=>p.name)];
   let lo = 0, hi = 0; for (const n of shown) for (const v of series[n]) { lo = Math.min(lo,v); hi = Math.max(hi,v); }
   const ticks = niceTicks(lo, hi, narrow ? 4 : 6); lo = Math.min(lo, ticks[0]); hi = Math.max(hi, ticks[ticks.length-1]);
@@ -574,9 +578,9 @@ function drawStandings(){
 }
 
 function drawLifetime(){
-  const list = MODEL.players.filter(p => STATE.lifeFilter === "all" || p.periods >= 3).sort((a,b)=>b.total-a.total);
+  const list = MODEL.players.filter(p => STATE.lifeFilter === "all" || p.nights >= 3).sort((a,b)=>b.total-a.total);
   const items = list.map(p => ({name:p.name, value:p.total,
-    tip: `<b>${esc(p.name)}</b> · ${p.periods} period${p.periods===1?"":"s"}` + MODEL.periods.filter(k => k in p.byPeriod).map(k => `<div class="r"><span>${esc(k)}</span><span>${money(p.byPeriod[k])}</span></div>`).join("") + `<div class="r"><span><b>Lifetime</b></span><span><b>${money(p.total)}</b></span></div>`}));
+    tip: `<b>${esc(p.name)}</b> · ${p.nights} night${p.nights===1?"":"s"}, ${p.periods} period${p.periods===1?"":"s"}` + MODEL.periods.filter(k => k in p.byPeriod).map(k => `<div class="r"><span>${esc(k)}</span><span>${money(p.byPeriod[k])}</span></div>`).join("") + `<div class="r"><span><b>Lifetime</b></span><span><b>${money(p.total)}</b></span></div>`}));
   divergingBars($("#lifetime"), items, {label:"Lifetime results", onClick: d => selectPlayer(d.name)});
 }
 
@@ -662,7 +666,7 @@ load().then(m => {
   STATE.period = m.periods[m.periods.length-1];
   const regs = [...m.players].sort((a,b)=>b.total-a.total);
   STATE.player = regs[0]?.name;
-  const regulars = regs.filter(p => p.periods >= 3);
+  const regulars = regs.filter(p => p.nights >= 3);
   STATE.trend = [...regulars.slice(0,2), ...regulars.slice(-2)].map((p,i) => ({name:p.name, slot:i+1}));
   render();
 }).catch(err => {
