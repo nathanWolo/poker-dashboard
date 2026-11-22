@@ -111,6 +111,10 @@ td.num,th.num{text-align:right}
 .rec .v{font-family:var(--display);font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums lining-nums}
 .rec .d{font-size:13px;color:var(--ink-2)}
 .owe{display:flex;flex-wrap:wrap;gap:8px}
+.owe-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.owe-group{min-width:0}
+.owe-h{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--grid);padding-bottom:6px;margin-bottom:10px}
+.owe-h span:last-child{color:var(--ink);font-variant-numeric:tabular-nums}
 .chip{display:inline-flex;gap:6px;align-items:baseline;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 12px;font-size:14px;font-variant-numeric:tabular-nums}
 .chip.paid{opacity:.55;text-decoration:line-through}
 .status{padding:40px 16px;text-align:center;color:var(--felt-muted)}
@@ -129,6 +133,7 @@ footer a{color:var(--felt-ink)}
   .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
   .row{grid-template-columns:minmax(0,1fr)}
   .records{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .owe-grid{grid-template-columns:minmax(0,1fr)}
   .sess summary{grid-template-columns:minmax(0,1fr) auto;row-gap:2px}
   .sess summary .meta{grid-column:1 / -1;grid-row:2;white-space:normal}
   h1{font-size:32px}
@@ -242,7 +247,15 @@ function parsePeriod(name, t){
       log.push({date:String(r[7]), name:String(r[8]).trim(), buyIn:bi, cashOut:co, net:round2(co-bi), period:name});
     }
   }
-  return {name, simple, standings: standings.filter(s => s.net != null), log};
+  // "Carry-over credits" table below the notes: name | amount
+  const carry = [];
+  const ci = t.rows.findIndex(r => typeof r[0] === "string" && /^carry-over credits/i.test(r[0].trim()));
+  if (ci >= 0) for (const r of t.rows.slice(ci+1)) {
+    if (!r[0] || typeof r[0] !== "string") break;
+    const amt = num(r[1]); if (amt != null) carry.push({name:r[0].trim(), amount:amt});
+  }
+  const tracksSettlement = (L[5]||"").toLowerCase() === "settled";
+  return {name, simple, standings: standings.filter(s => s.net != null), log, carry, tracksSettlement};
 }
 
 function sessionsFrom(tabs){
@@ -366,19 +379,26 @@ function render(){
   const leader = [...cur.standings].sort((a,b)=>b.net-a.net)[0];
   const lifeLeader = [...players].sort((a,b)=>b.total-a.total)[0];
 
-  // Outstanding from the most recent closed period that tracks settlement
-  const closed = [...tabs].slice(0,-1).reverse().find(t => t.standings.some(s => "settled" in s && s.settled !== undefined) && t.log.length);
-  let oweHtml = "";
-  if (closed){
-    const losers = closed.standings.filter(s => s.net < 0);
-    const unpaid = losers.filter(s => !/paid/i.test(s.settled||""));
-    const owed = round2(unpaid.reduce((a,s)=>a-s.net,0));
-    if (losers.length){
-      oweHtml = `<div class="card" data-suit="♥"><h2>Settling up: ${esc(closed.name)}</h2>
-        <p class="hint">${unpaid.length ? `${unpaid.length} of ${losers.length} still to pay, ${money(owed,false)} outstanding.` : "Everyone has paid."}</p>
-        <div class="owe">${losers.sort((a,b)=>a.net-b.net).map(s => `<span class="chip ${/paid/i.test(s.settled||"")?"paid":""}">${esc(s.name)} <span>${money(-s.net,false)}</span></span>`).join("")}</div></div>`;
-    }
+  // Outstanding payments across every closed period that tracks settlement.
+  // A blank Settled cell means not settled yet; anything else ("Paid", "Carried over", "Bank") means done.
+  const done = st => /\S/.test(st.settled || "");
+  const toCollect = [], toPay = [];
+  for (const t of tabs.slice(0,-1).filter(t => t.tracksSettlement)) for (const st of t.standings) {
+    if (done(st) || Math.abs(st.net) < 0.005) continue;
+    (st.net < 0 ? toCollect : toPay).push({name:st.name, amount:Math.abs(st.net), period:t.name});
   }
+  const carry = cur.carry || [];
+  const sum = l => round2(l.reduce((a,x)=>a+x.amount,0));
+  const multi = new Set([...toCollect, ...toPay].map(x=>x.period)).size > 1;
+  const chips = l => l.sort((a,b)=>b.amount-a.amount).map(x => `<span class="chip">${esc(x.name)} <span>${money(x.amount,false)}</span>${multi?` <span style="color:var(--muted);font-size:12px">${esc(x.period)}</span>`:""}</span>`).join("");
+  const group = (title, l, empty) => `<div class="owe-group"><div class="owe-h"><span>${title}</span><span>${l.length ? money(sum(l),false) : ""}</span></div>${l.length ? `<div class="owe">${chips(l)}</div>` : `<p class="hint" style="margin:0">${empty}</p>`}</div>`;
+  const oweHtml = `<div class="card" data-suit="♥"><h2>Outstanding payments</h2>
+    <p class="hint">${toCollect.length || toPay.length ? "From past settlements that aren't finished yet." : "Every past settlement is squared away."} Credits roll into the next payout.</p>
+    <div class="owe-grid">
+      ${group("Still to pay in", toCollect, "Nobody owes anything.")}
+      ${group("Still to be paid out", toPay, "All winnings paid out.")}
+      ${group("Credit for next payout", carry.map(c => ({name:c.name, amount:c.amount, period:cur.name})), "No credits carried over.")}
+    </div></div>`;
 
   const periodOpts = [...periods].reverse().map(p => `<option value="${esc(p)}" ${p===STATE.period?"selected":""}>${esc(p)}${p===cur.name?" (current)":""}</option>`).join("");
   const playerOpts = [...players].sort((a,b)=>a.name.localeCompare(b.name)).map(p => `<option ${p.name===STATE.player?"selected":""}>${esc(p.name)}</option>`).join("");
