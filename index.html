@@ -449,11 +449,14 @@ function drawRecords(sessions){
     recs.push(["Best period", money(bp.v), `${bp.name}, ${bp.period}`]);
     recs.push(["Worst period", money(wp.v), `${wp.name}, ${wp.period}`]);
   }
+  // Games played: use each period's Sessions column where the tab has one (Apr 2026 on).
   const counts = {};
-  for (const e of all) counts[e.name] = (counts[e.name]||0)+1;
+  const counted = MODEL.tabs.filter(t => t.standings.some(s => s.sessions != null));
+  for (const t of counted) for (const s of t.standings) if (s.sessions) counts[s.name] = (counts[s.name]||0) + s.sessions;
+  const since = counted.length ? counted[0].name.split("-")[0] + " " + (counted[0].name.match(/\d{4}/)||[""])[0] : "";
   const mx = Math.max(0, ...Object.values(counts));
   const tops = Object.keys(counts).filter(k => counts[k] === mx);
-  if (mx) recs.push(["Most games logged", `${mx}`, tops.length > 3 ? `${tops.length}-way tie` : tops.join(", ")]);
+  if (mx) recs.push([`Most games played${since ? " (since " + since + ")" : ""}`, `${mx}`, tops.length > 3 ? `${tops.length}-way tie` : tops.join(", ")]);
   $("#records").innerHTML = recs.map(([k,v,d]) => `<div class="rec"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="d">${esc(d)}</div></div>`).join("");
 }
 
