@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poker 2.0</title>
+<meta name="description" content="Standings, sessions and lifetime results for the Poker 2.0 home game.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%99%A0%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f3f2ee;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+  --win:#2a78d6; --loss:#e34948; --mid:#f0efec;
+  --win-ink:#1c5cab; --loss-ink:#b8302f;
+  --accent:#2a78d6;
+  --font: system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
+    --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --win:#3987e5; --loss:#e66767; --mid:#383835;
+    --win-ink:#86b6ef; --loss-ink:#f09a9a; --accent:#3987e5;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
+  --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --win:#3987e5; --loss:#e66767; --mid:#383835;
+  --win-ink:#86b6ef; --loss-ink:#f09a9a; --accent:#3987e5;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page);color:var(--ink);font-family:var(--font);-webkit-text-size-adjust:100%}
+body{line-height:1.45}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 16px 64px}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+h1{font-size:28px;line-height:1.1;margin:0;letter-spacing:-0.01em}
+h1 .suit{color:var(--muted);font-weight:400;margin-right:6px}
+.sub{color:var(--ink-2);font-size:14px;margin-top:4px}
+.theme-btn{font:inherit;font-size:13px;color:var(--ink-2);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-size:26px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .d{font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 18px 14px;margin-bottom:16px;min-width:0}
+.card h2{font-size:17px;margin:0}
+.card .hint{font-size:13px;color:var(--ink-2);margin:2px 0 12px}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;max-width:100%}
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:2px}
+.seg button{font:inherit;font-size:13px;border:0;background:transparent;color:var(--ink-2);padding:5px 10px;border-radius:6px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--border)}
+svg text{font-family:var(--font)}
+.chart{width:100%;display:block;overflow:visible}
+.tt{position:fixed;pointer-events:none;z-index:10;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.12);max-width:260px;display:none}
+.tt b{font-weight:650}
+.tt .r{display:flex;justify-content:space-between;gap:16px;font-variant-numeric:tabular-nums}
+.tt .r span:first-child{color:var(--ink-2)}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--grid)}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+td.num,th.num{text-align:right}
+.pos{color:var(--win-ink)} .neg{color:var(--loss-ink)}
+.sess{border-bottom:1px solid var(--grid)}
+.sess summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:10px 4px}
+.sess summary::-webkit-details-marker{display:none}
+.sess summary .date{font-weight:600}
+.sess summary .meta{color:var(--ink-2);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sess summary .pot{font-variant-numeric:tabular-nums;color:var(--ink-2);font-size:14px}
+.sess[open] summary{background:var(--surface-2);border-radius:8px}
+.sess .inner{padding:6px 4px 12px}
+.records{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.rec{background:var(--surface-2);border-radius:10px;padding:12px 14px;min-width:0}
+.rec .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.rec .v{font-size:20px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+.rec .d{font-size:13px;color:var(--ink-2)}
+.owe{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;gap:6px;align-items:baseline;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:14px;font-variant-numeric:tabular-nums}
+.chip.paid{opacity:.55;text-decoration:line-through}
+.status{padding:40px 16px;text-align:center;color:var(--ink-2)}
+.status.err{color:var(--loss-ink)}
+footer{color:var(--muted);font-size:13px;margin-top:24px}
+footer a{color:var(--ink-2)}
+.legend{display:flex;gap:14px;font-size:13px;color:var(--ink-2);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:760px){
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .row{grid-template-columns:minmax(0,1fr)}
+  .records{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sess summary{grid-template-columns:minmax(0,1fr) auto;row-gap:2px}
+  .sess summary .meta{grid-column:1 / -1;grid-row:2;white-space:normal}
+  h1{font-size:24px}
+}
+@media (max-width:420px){ .records{grid-template-columns:minmax(0,1fr)} .tile .v{font-size:22px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1><span class="suit">♠</span>Poker 2.0</h1>
+      <div class="sub" id="subtitle">Loading the tally…</div>
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button">Theme: auto</button>
+  </header>
+  <div id="app"><div class="status">Loading the tally…</div></div>
+  <footer>Live from the group's Google Sheet. Numbers update as soon as the Sheet does. Lifetime covers games since the Poker 2.0 group started in Sep 2025.</footer>
+</div>
+<div class="tt" id="tt" role="tooltip"></div>
+
+<script>
+// ---- Config ----------------------------------------------------------------
+const SHEET_ID = "109O_hZHBkJ3iyXgaNRbHOd3fWFPZaJAc_KKs1I9fR8Y";
+const LIFETIME_TAB = "Lifetime";
+
+// ---- Helpers ---------------------------------------------------------------
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money = (n, sign=true) => {
+  if (n == null || isNaN(n)) return "–";
+  const a = Math.abs(n).toLocaleString("en-CA",{minimumFractionDigits:2,maximumFractionDigits:2});
+  return (n < 0 ? "−$" : (sign && n > 0 ? "+$" : "$")) + a;
+};
+const cls = n => n > 0.004 ? "pos" : n < -0.004 ? "neg" : "";
+const round2 = n => Math.round(n*100)/100;
+const fmtDate = d => { const [y,m,dd] = d.split("-").map(Number); return new Date(y,m-1,dd).toLocaleDateString("en-CA",{month:"short",day:"numeric",year:"numeric"}); };
+const shortDate = d => { const [y,m,dd] = d.split("-").map(Number); return new Date(y,m-1,dd).toLocaleDateString("en-CA",{month:"short",day:"numeric"}); };
+
+function gvizUrl(sheet, range){
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=1&sheet=${encodeURIComponent(sheet)}&range=${range}&_=${Date.now()}`;
+}
+async function fetchTab(sheet, range){
+  const res = await fetch(gvizUrl(sheet, range));
+  const text = await res.text();
+  const start = text.indexOf("{"), end = text.lastIndexOf("}");
+  if (start < 0) throw new Error("not-shared");
+  const j = JSON.parse(text.slice(start, end+1));
+  if (j.status === "error") throw new Error(j.errors?.[0]?.detailed_message || "sheet error");
+  const labels = j.table.cols.map(c => (c.label||"").trim());
+  const rows = j.table.rows.map(r => (r.c||[]).map(c => {
+    if (!c) return null;
+    if (typeof c.v === "string" && c.v.startsWith("Date(")) {
+      const [y,m,d] = c.v.slice(5,-1).split(",").map(Number);
+      return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    }
+    return c.v ?? null;
+  }));
+  return {labels, rows};
+}
+const num = v => (typeof v === "number" ? v : (v === "" || v == null ? null : (isNaN(+v) ? null : +v)));
+
+// ---- Load & model ----------------------------------------------------------
+async function load(){
+  const life = await fetchTab(LIFETIME_TAB, "A1:Z120");
+  const L = life.labels;
+  const pStart = L.indexOf("Periods") + 1;
+  const periods = L.slice(pStart).filter(Boolean);
+  const players = [];
+  for (const r of life.rows){
+    const name = r[0];
+    if (!name || typeof name !== "string") continue;
+    if (name.trim().toUpperCase() === "TOTAL") break;
+    const byPeriod = {};
+    periods.forEach((p,i) => { const v = num(r[pStart+i]); if (v != null) byPeriod[p] = v; });
+    const vals = Object.values(byPeriod);
+    players.push({name: name.trim(), byPeriod, total: round2(vals.reduce((a,b)=>a+b,0)), periods: vals.length});
+  }
+  const tabs = await Promise.all(periods.map(p => fetchTab(p, "A1:L600").then(t => parsePeriod(p, t)).catch(() => ({name:p, standings:[], log:[]}))));
+  return {periods, players, tabs};
+}
+
+function parsePeriod(name, t){
+  const L = t.labels;
+  const simple = (L[1]||"").toUpperCase() === "P/L";
+  const standings = [];
+  for (const r of t.rows){
+    const n = r[0];
+    if (!n || typeof n !== "string") continue;
+    if (n.trim().toUpperCase() === "TOTAL") break;
+    if (simple) standings.push({name:n.trim(), net:num(r[1])});
+    else standings.push({name:n.trim(), sessions:num(r[1]), buyIn:num(r[2]), cashOut:num(r[3]), net:num(r[4]), settled: (L[5]||"").toLowerCase()==="settled" ? (r[5]||"") : ""});
+  }
+  const log = [];
+  if ((L[7]||"").toLowerCase() === "date"){
+    for (const r of t.rows){
+      if (!r[7] || !r[8]) continue;
+      const bi = num(r[9]), co = num(r[10]);
+      if (bi == null || co == null) continue;
+      log.push({date:String(r[7]), name:String(r[8]).trim(), buyIn:bi, cashOut:co, net:round2(co-bi), period:name});
+    }
+  }
+  return {name, simple, standings: standings.filter(s => s.net != null), log};
+}
+
+function sessionsFrom(tabs){
+  const map = new Map();
+  for (const t of tabs) for (const e of t.log){
+    if (!map.has(e.date)) map.set(e.date, {date:e.date, period:t.name, rows:[]});
+    map.get(e.date).rows.push(e);
+  }
+  return [...map.values()].map(s => {
+    s.rows.sort((a,b)=>b.net-a.net);
+    s.pot = round2(s.rows.reduce((a,r)=>a+r.buyIn,0));
+    return s;
+  }).sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+// ---- Tooltip ---------------------------------------------------------------
+const tt = $("#tt");
+function showTT(html, x, y){
+  tt.innerHTML = html; tt.style.display = "block";
+  const w = tt.offsetWidth, h = tt.offsetHeight;
+  let left = x + 14, top = y + 14;
+  if (left + w > innerWidth - 8) left = x - w - 14;
+  if (left < 8) left = 8;
+  if (top + h > innerHeight - 8) top = y - h - 14;
+  tt.style.left = left + "px"; tt.style.top = top + "px";
+}
+const hideTT = () => { tt.style.display = "none"; };
+document.addEventListener("scroll", hideTT, {passive:true});
+
+// ---- Charts ----------------------------------------------------------------
+// Diverging horizontal bars around a zero baseline. items: [{name, value, tip}]
+function divergingBars(el, items, opts={}){
+  // Name column | plot (zero placed by data range) | value column, right-aligned.
+  const W = Math.max(el.clientWidth, 260);
+  const narrow = W < 480;
+  const rowH = 26, gap = 4, labelW = narrow ? 68 : 96, valW = narrow ? 70 : 84;
+  const H = items.length * rowH + 8;
+  const plotL = labelW + 10, plotR = W - valW - 8;
+  const maxP = Math.max(0, ...items.map(d=>d.value)), maxN = Math.max(0, ...items.map(d=>-d.value));
+  const scale = (plotR - plotL) / ((maxP + maxN) || 1);
+  const zero = plotL + maxN*scale;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(opts.label||"Results by player")}">`;
+  s += `<line x1="${zero}" x2="${zero}" y1="0" y2="${H-4}" stroke="var(--axis)" stroke-width="1"/>`;
+  items.forEach((d,i) => {
+    const y = i*rowH + 4, bh = rowH - gap*2 - 4, by = y + gap + 2;
+    const len = Math.max(Math.abs(d.value)*scale, d.value ? 2 : 0);
+    const x = d.value >= 0 ? zero : zero - len;
+    const r = Math.min(4, len/2);
+    const path = d.value >= 0
+      ? `M${x},${by} h${len-r} a${r},${r} 0 0 1 ${r},${r} v${bh-2*r} a${r},${r} 0 0 1 -${r},${r} h-${len-r} z`
+      : `M${x+len},${by} h-${len-r} a${r},${r} 0 0 0 -${r},${r} v${bh-2*r} a${r},${r} 0 0 0 ${r},${r} h${len-r} z`;
+    s += `<g class="bar" data-i="${i}"><rect x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent"/>`;
+    s += `<text x="${labelW}" y="${y+rowH/2+4}" text-anchor="end" font-size="13" fill="var(--ink)">${esc(d.name)}</text>`;
+    if (len > 0) s += `<path d="${path}" fill="${d.value>=0?"var(--win)":"var(--loss)"}"/>`;
+    s += `<text x="${W-2}" y="${y+rowH/2+4}" text-anchor="end" font-size="12" fill="var(--ink-2)" style="font-variant-numeric:tabular-nums">${money(d.value)}</text></g>`;
+  });
+  s += `</svg>`;
+  el.innerHTML = s;
+  el.querySelectorAll(".bar").forEach(g => {
+    const d = items[+g.dataset.i];
+    const show = e => { const p = e.touches?e.touches[0]:e; showTT(d.tip || `<b>${esc(d.name)}</b><div class="r"><span>Net</span><span>${money(d.value)}</span></div>`, p.clientX, p.clientY); };
+    g.addEventListener("mousemove", show); g.addEventListener("mouseleave", hideTT);
+    g.addEventListener("touchstart", show, {passive:true});
+    if (opts.onClick) { g.style.cursor = "pointer"; g.addEventListener("click", () => opts.onClick(d)); }
+  });
+}
+
+// Vertical diverging columns for one player's periods/sessions. items: [{label, value, tip}]
+function columns(el, items){
+  const W = Math.max(el.clientWidth, 280), H = 200, padT = 22, padB = 34, padL = 8, padR = 8;
+  const maxP = Math.max(0, ...items.map(d=>d.value)), maxN = Math.max(0, ...items.map(d=>-d.value));
+  const tot = (maxP + maxN) || 1;
+  const plotH = H - padT - padB;
+  const zeroY = padT + plotH * (maxP / tot);
+  const n = items.length, slot = (W - padL - padR) / Math.max(n,1);
+  const bw = Math.min(44, slot*0.6);
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Results by period">`;
+  s += `<line x1="${padL}" x2="${W-padR}" y1="${zeroY}" y2="${zeroY}" stroke="var(--axis)"/>`;
+  items.forEach((d,i) => {
+    const cx = padL + slot*i + slot/2;
+    const h = d.value == null ? 0 : Math.max(Math.abs(d.value)/tot*plotH, d.value ? 2 : 0);
+    const x = cx - bw/2, r = Math.min(4, h/2, bw/2);
+    s += `<g class="col" data-i="${i}"><rect x="${cx-slot/2}" y="0" width="${slot}" height="${H}" fill="transparent"/>`;
+    if (d.value != null && h > 0){
+      const path = d.value >= 0
+        ? `M${x},${zeroY} v-${h-r} a${r},${r} 0 0 1 ${r},-${r} h${bw-2*r} a${r},${r} 0 0 1 ${r},${r} v${h-r} z`
+        : `M${x},${zeroY} v${h-r} a${r},${r} 0 0 0 ${r},${r} h${bw-2*r} a${r},${r} 0 0 0 ${r},-${r} v-${h-r} z`;
+      s += `<path d="${path}" fill="${d.value>=0?"var(--win)":"var(--loss)"}"/>`;
+      const ly = d.value >= 0 ? zeroY - h - 6 : zeroY + h + 14;
+      if (n <= 8) s += `<text x="${cx}" y="${ly}" text-anchor="middle" font-size="11" fill="var(--ink-2)" style="font-variant-numeric:tabular-nums">${money(d.value)}</text>`;
+    } else {
+      s += `<text x="${cx}" y="${zeroY-6}" text-anchor="middle" font-size="11" fill="var(--muted)">—</text>`;
+    }
+    const [l1,l2] = periodLines(d.label);
+    s += `<text x="${cx}" y="${H-20}" text-anchor="middle" font-size="11" fill="var(--muted)"><tspan x="${cx}">${esc(l1)}–</tspan><tspan x="${cx}" dy="13">${esc(l2||"")}</tspan></text></g>`;
+  });
+  s += `</svg>`;
+  el.innerHTML = s;
+  el.querySelectorAll(".col").forEach(g => {
+    const d = items[+g.dataset.i];
+    const show = e => { const p = e.touches?e.touches[0]:e; showTT(d.tip, p.clientX, p.clientY); };
+    g.addEventListener("mousemove", show); g.addEventListener("mouseleave", hideTT);
+    g.addEventListener("touchstart", show, {passive:true});
+  });
+}
+
+const periodLines = p => p.replace(" - now","-now").replace(/20(\d\d)/g,"’$1").split("-");
+
+// ---- Render ----------------------------------------------------------------
+let MODEL, STATE = {period:null, lifeFilter:"regulars", player:null};
+
+function render(){
+  const {periods, players, tabs} = MODEL;
+  const cur = tabs[tabs.length-1];
+  const sessions = sessionsFrom(tabs);
+  const curSessions = sessions.filter(s => s.period === cur.name);
+  const last = sessions[0];
+  $("#subtitle").textContent = last ? `Last game ${fmtDate(last.date)} · ${players.length} players all-time` : `${players.length} players all-time`;
+
+  const curPot = round2(curSessions.reduce((a,s)=>a+s.pot,0));
+  const leader = [...cur.standings].sort((a,b)=>b.net-a.net)[0];
+  const lifeLeader = [...players].sort((a,b)=>b.total-a.total)[0];
+
+  // Outstanding from the most recent closed period that tracks settlement
+  const closed = [...tabs].slice(0,-1).reverse().find(t => t.standings.some(s => "settled" in s && s.settled !== undefined) && t.log.length);
+  let oweHtml = "";
+  if (closed){
+    const losers = closed.standings.filter(s => s.net < 0);
+    const unpaid = losers.filter(s => !/paid/i.test(s.settled||""));
+    const owed = round2(unpaid.reduce((a,s)=>a-s.net,0));
+    if (losers.length){
+      oweHtml = `<div class="card"><h2>Settling up: ${esc(closed.name)}</h2>
+        <p class="hint">${unpaid.length ? `${unpaid.length} of ${losers.length} still to pay, ${money(owed,false)} outstanding.` : "Everyone has paid."}</p>
+        <div class="owe">${losers.sort((a,b)=>a.net-b.net).map(s => `<span class="chip ${/paid/i.test(s.settled||"")?"paid":""}">${esc(s.name)} <span>${money(-s.net,false)}</span></span>`).join("")}</div></div>`;
+    }
+  }
+
+  const periodOpts = [...periods].reverse().map(p => `<option value="${esc(p)}" ${p===STATE.period?"selected":""}>${esc(p)}${p===cur.name?" (current)":""}</option>`).join("");
+  const playerOpts = [...players].sort((a,b)=>a.name.localeCompare(b.name)).map(p => `<option ${p.name===STATE.player?"selected":""}>${esc(p.name)}</option>`).join("");
+
+  $("#app").innerHTML = `
+    <div class="tiles">
+      <div class="tile"><div class="k">This period</div><div class="v">${curSessions.length} game${curSessions.length===1?"":"s"}</div><div class="d">${esc(cur.name)}</div></div>
+      <div class="tile"><div class="k">Buy-ins this period</div><div class="v">${money(curPot,false)}</div><div class="d">${curSessions.length ? `${money(round2(curPot/curSessions.length),false)} per game` : "No games yet"}</div></div>
+      <div class="tile"><div class="k">Period leader</div><div class="v">${leader?esc(leader.name):"–"}</div><div class="d ${leader?cls(leader.net):""}">${leader?money(leader.net):""}</div></div>
+      <div class="tile"><div class="k">All-time leader</div><div class="v">${esc(lifeLeader.name)}</div><div class="d ${cls(lifeLeader.total)}">${money(lifeLeader.total)}</div></div>
+    </div>
+    ${oweHtml}
+    <div class="card">
+      <h2>Standings</h2>
+      <p class="hint">Net result for each player in the selected settlement period. Tap a bar for details.</p>
+      <div class="controls"><label class="sr" for="periodSel">Period</label><select id="periodSel">${periodOpts}</select></div>
+      <div class="legend"><span><i style="background:var(--win)"></i>Up</span><span><i style="background:var(--loss)"></i>Down</span></div>
+      <div id="standings"></div>
+    </div>
+    <div class="card">
+      <h2>Lifetime</h2>
+      <p class="hint">Every settlement period added together. Tap a name to see their history.</p>
+      <div class="controls"><div class="seg" role="group" aria-label="Who to show">
+        <button type="button" data-f="regulars" aria-pressed="${STATE.lifeFilter==="regulars"}">Regulars (3+ periods)</button>
+        <button type="button" data-f="all" aria-pressed="${STATE.lifeFilter==="all"}">Everyone</button></div></div>
+      <div id="lifetime"></div>
+    </div>
+    <div class="card" id="playerCard">
+      <h2>Player history</h2>
+      <p class="hint">Result in each settlement period, plus every logged game.</p>
+      <div class="controls"><label class="sr" for="playerSel">Player</label><select id="playerSel">${playerOpts}</select></div>
+      <div id="playerSummary"></div>
+      <div id="playerChart"></div>
+      <div id="playerGames"></div>
+    </div>
+    <div class="card">
+      <h2>Records</h2>
+      <p class="hint">Single-game records cover games with a full session log (since ${sessions.length?fmtDate(sessions[sessions.length-1].date):"–"}). Period records cover everything.</p>
+      <div class="records" id="records"></div>
+    </div>
+    <div class="card">
+      <h2>Games</h2>
+      <p class="hint">Every logged game, newest first. Tap one to see the full results.</p>
+      <div id="games"></div>
+    </div>`;
+
+  $("#periodSel").addEventListener("change", e => { STATE.period = e.target.value; drawStandings(); });
+  document.querySelectorAll(".seg button").forEach(b => b.addEventListener("click", () => {
+    STATE.lifeFilter = b.dataset.f;
+    document.querySelectorAll(".seg button").forEach(x => x.setAttribute("aria-pressed", x===b));
+    drawLifetime();
+  }));
+  $("#playerSel").addEventListener("change", e => { STATE.player = e.target.value; drawPlayer(); });
+
+  drawStandings(); drawLifetime(); drawPlayer(); drawRecords(sessions); drawGames(sessions);
+}
+
+function selectPlayer(name){
+  STATE.player = name; $("#playerSel").value = name; drawPlayer();
+  $("#playerCard").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function drawStandings(){
+  const t = MODEL.tabs.find(t => t.name === STATE.period);
+  const items = [...t.standings].sort((a,b)=>b.net-a.net).map(s => ({
+    name: s.name, value: s.net,
+    tip: `<b>${esc(s.name)}</b> · ${esc(t.name)}` +
+      (s.sessions!=null ? `<div class="r"><span>Games</span><span>${s.sessions}</span></div><div class="r"><span>Bought in</span><span>${money(s.buyIn,false)}</span></div><div class="r"><span>Cashed out</span><span>${money(s.cashOut,false)}</span></div>` : "") +
+      `<div class="r"><span>Net</span><span>${money(s.net)}</span></div>` + (s.settled ? `<div class="r"><span>Settled</span><span>${esc(s.settled)}</span></div>` : "")
+  }));
+  const el = $("#standings");
+  if (!items.length){ el.innerHTML = `<div class="status">No results yet.</div>`; return; }
+  divergingBars(el, items, {label:`Standings, ${t.name}`, onClick: d => selectPlayer(d.name)});
+}
+
+function drawLifetime(){
+  const list = MODEL.players.filter(p => STATE.lifeFilter === "all" || p.periods >= 3).sort((a,b)=>b.total-a.total);
+  const items = list.map(p => ({name:p.name, value:p.total,
+    tip: `<b>${esc(p.name)}</b> · ${p.periods} period${p.periods===1?"":"s"}` + MODEL.periods.filter(k => k in p.byPeriod).map(k => `<div class="r"><span>${esc(k)}</span><span>${money(p.byPeriod[k])}</span></div>`).join("") + `<div class="r"><span><b>Lifetime</b></span><span><b>${money(p.total)}</b></span></div>`}));
+  divergingBars($("#lifetime"), items, {label:"Lifetime results", onClick: d => selectPlayer(d.name)});
+}
+
+function drawPlayer(){
+  const p = MODEL.players.find(x => x.name === STATE.player);
+  if (!p) return;
+  const games = MODEL.tabs.flatMap(t => t.log).filter(e => e.name === p.name).sort((a,b)=>b.date.localeCompare(a.date));
+  const wins = games.filter(g => g.net > 0).length;
+  const best = games.length ? games.reduce((a,b)=> b.net > a.net ? b : a) : null;
+  $("#playerSummary").innerHTML = `<div class="records" style="margin-bottom:12px">
+    <div class="rec"><div class="k">Lifetime</div><div class="v ${cls(p.total)}">${money(p.total)}</div><div class="d">${p.periods} period${p.periods===1?"":"s"}</div></div>
+    <div class="rec"><div class="k">Logged games</div><div class="v">${games.length}</div><div class="d">${games.length?`Up in ${wins} (${Math.round(wins/games.length*100)}%)`:"None in the logs yet"}</div></div>
+    <div class="rec"><div class="k">Best logged game</div><div class="v ${best?cls(best.net):""}">${best?money(best.net):"–"}</div><div class="d">${best?fmtDate(best.date):""}</div></div></div>`;
+  columns($("#playerChart"), MODEL.periods.map(k => ({label: k, value: k in p.byPeriod ? p.byPeriod[k] : null,
+    tip: `<b>${esc(k)}</b><div class="r"><span>${esc(p.name)}</span><span>${k in p.byPeriod ? money(p.byPeriod[k]) : "Didn't play"}</span></div>`})));
+  $("#playerGames").innerHTML = games.length ? `<table><thead><tr><th>Date</th><th class="num">In</th><th class="num">Out</th><th class="num">Net</th></tr></thead><tbody>${
+    games.map(g => `<tr><td>${fmtDate(g.date)}</td><td class="num">${money(g.buyIn,false)}</td><td class="num">${money(g.cashOut,false)}</td><td class="num ${cls(g.net)}">${money(g.net)}</td></tr>`).join("")}</tbody></table>` : "";
+}
+
+function drawRecords(sessions){
+  const all = sessions.flatMap(s => s.rows);
+  const recs = [];
+  if (all.length){
+    const big = all.reduce((a,b)=> b.net>a.net?b:a), bad = all.reduce((a,b)=> b.net<a.net?b:a);
+    const pot = sessions.reduce((a,b)=> b.pot>a.pot?b:a);
+    recs.push(["Biggest night", money(big.net), `${big.name}, ${fmtDate(big.date)}`]);
+    recs.push(["Roughest night", money(bad.net), `${bad.name}, ${fmtDate(bad.date)}`]);
+    recs.push(["Biggest game", money(pot.pot,false), `${pot.rows.length} players, ${fmtDate(pot.date)}`]);
+  }
+  const pr = MODEL.players.flatMap(p => Object.entries(p.byPeriod).map(([k,v]) => ({name:p.name, period:k, v})));
+  if (pr.length){
+    const bp = pr.reduce((a,b)=> b.v>a.v?b:a), wp = pr.reduce((a,b)=> b.v<a.v?b:a);
+    recs.push(["Best period", money(bp.v), `${bp.name}, ${bp.period}`]);
+    recs.push(["Worst period", money(wp.v), `${wp.name}, ${wp.period}`]);
+  }
+  const counts = {};
+  for (const e of all) counts[e.name] = (counts[e.name]||0)+1;
+  const mx = Math.max(0, ...Object.values(counts));
+  const tops = Object.keys(counts).filter(k => counts[k] === mx);
+  if (mx) recs.push(["Most games logged", `${mx}`, tops.length > 3 ? `${tops.length}-way tie` : tops.join(", ")]);
+  $("#records").innerHTML = recs.map(([k,v,d]) => `<div class="rec"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="d">${esc(d)}</div></div>`).join("");
+}
+
+function drawGames(sessions){
+  $("#games").innerHTML = sessions.map(s => {
+    const top = s.rows[0];
+    return `<details class="sess"><summary><span class="date">${shortDate(s.date)}</span><span class="meta">${s.rows.length} players · top: ${esc(top.name)} <span class="${cls(top.net)}">${money(top.net)}</span></span><span class="pot">${money(s.pot,false)} in</span></summary>
+      <div class="inner"><table><thead><tr><th>Player</th><th class="num">In</th><th class="num">Out</th><th class="num">Net</th></tr></thead><tbody>${
+        s.rows.map(r => `<tr><td>${esc(r.name)}</td><td class="num">${money(r.buyIn,false)}</td><td class="num">${money(r.cashOut,false)}</td><td class="num ${cls(r.net)}">${money(r.net)}</td></tr>`).join("")}</tbody></table></div></details>`;
+  }).join("") || `<div class="status">No logged games yet.</div>`;
+}
+
+// ---- Theme toggle ----------------------------------------------------------
+(function(){
+  const order = ["auto","light","dark"];
+  let mode = "auto";
+  try { mode = localStorage.getItem("poker-theme") || "auto"; } catch(e){}
+  const apply = () => {
+    if (mode === "auto") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", mode);
+    $("#themeBtn").textContent = "Theme: " + mode;
+  };
+  apply();
+  $("#themeBtn").addEventListener("click", () => {
+    mode = order[(order.indexOf(mode)+1) % order.length];
+    try { localStorage.setItem("poker-theme", mode); } catch(e){}
+    apply();
+  });
+})();
+
+// ---- Boot ------------------------------------------------------------------
+let resizeT;
+addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => { if (MODEL){ drawStandings(); drawLifetime(); drawPlayer(); } }, 150); });
+
+load().then(m => {
+  MODEL = m;
+  STATE.period = m.periods[m.periods.length-1];
+  const regs = [...m.players].sort((a,b)=>b.total-a.total);
+  STATE.player = regs[0]?.name;
+  render();
+}).catch(err => {
+  console.error(err);
+  $("#subtitle").textContent = "Couldn't load the tally";
+  $("#app").innerHTML = `<div class="card status err">Couldn't read the Google Sheet. It needs to be shared as <b>Anyone with the link → Viewer</b>.</div>`;
+});
+</script>
+</body>
+</html>
