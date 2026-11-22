@@ -268,7 +268,7 @@ function divergingBars(el, items, opts={}){
 
 // Vertical diverging columns for one player's periods/sessions. items: [{label, value, tip}]
 function columns(el, items){
-  const W = Math.max(el.clientWidth, 280), H = 200, padT = 22, padB = 34, padL = 8, padR = 8;
+  const W = Math.max(el.clientWidth, 280), H = 232, padT = 22, padB = 54, padL = 8, padR = 8;
   const maxP = Math.max(0, ...items.map(d=>d.value)), maxN = Math.max(0, ...items.map(d=>-d.value));
   const tot = (maxP + maxN) || 1;
   const plotH = H - padT - padB;
